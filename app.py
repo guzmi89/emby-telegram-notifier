@@ -83,7 +83,7 @@ def get_item_details(item_id):
     base_url = f"{EMBY_BASE_URL}/emby/Items"
     query_params = {
         "Recursive": "true",
-        "Fields": "Overview,PremiereDate,ProviderIds,RemoteTrailers,ProductionYear,DateCreated",
+        "Fields": "Overview,PremiereDate,ProviderIds,RemoteTrailers,ProductionYear,DateCreated,CommunityRating",
         "Ids": item_id,
     }
 
@@ -204,11 +204,12 @@ def process_payload(item_id):
     if item_type == "Movie":
         if not item_already_notified(item_name, release_year):
             runtime_ticks = item_details["Items"][0].get("RunTimeTicks")
+            rating = str(round(item_details["Items"][0].get("CommunityRating"),1))
             if runtime_ticks is not None:
                 runtime_sec = runtime_ticks // 10_000_000
                 hours, remainder = divmod(runtime_sec, 3600)
                 minutes, seconds = divmod(remainder, 60)
-                runtime = "{:02}:{:02}:{:02}".format(hours, minutes, seconds)
+                runtime = "{:02}:{:02}".format(hours, minutes)
             else:
                 runtime = "Unknown"
             movie_name_cleaned = item_name.replace(f" ({release_year})", "").strip()
@@ -223,13 +224,14 @@ def process_payload(item_id):
                 )
 
             notification_message = (
-                f"*🍿Nueva película Añadida🍿*\n\n*{movie_name_cleaned}* *({release_year})*\n\n{overview}\n\n"
-                f"Duración\n{runtime}"
+                f"*🍿 NUEVA PELÍCULA AÑADIDA 🍿*\n\n*{movie_name_cleaned}* *({release_year})*\n\n{overview}\n\n"
+                f"Duración: {runtime}\n"
+                f"Valoración: {rating}/10"
             )
 
             if trailer_url != "Unknown":
                 notification_message += (
-                    f"\n\n[🎥]({trailer_url})[Trailer]({trailer_url})"
+                    f"\n\n[🎥 ]({trailer_url})[Trailer]({trailer_url})"
                 )
 
             mark_item_as_notified(item_name, release_year)
@@ -286,7 +288,7 @@ def process_payload(item_id):
         ):
             if is_within_last_x_days(premiere_date, EPISODE_PREMIERED_WITHIN_X_DAYS):
                 notification_message = (
-                    f"*Nuevo episodio añadido*\n\n*Fecha de estreno*: {premiere_date}\n\n*Series*: {series_name_cleaned} *S*"
+                    f"*Nuevo episodio añadido*\n\n*Fecha de estreno*: {premiere_date}\n\n*Serie*: {series_name_cleaned} *S*"
                     f"{season_num}*E*{season_epi}\n*Título del episodio*: {item_name}\n\n{overview}\n\n"
                 )
 
