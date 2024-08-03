@@ -83,7 +83,7 @@ def get_item_details(item_id):
     base_url = f"{EMBY_BASE_URL}/emby/Items"
     query_params = {
         "Recursive": "true",
-        "Fields": "Overview,PremiereDate,ProviderIds,RemoteTrailers,ProductionYear,DateCreated,CommunityRating",
+        "Fields": "Overview,PremiereDate,ProviderIds,RemoteTrailers,ProductionYear,DateCreated,CommunityRating,Genres",
         "Ids": item_id,
     }
 
@@ -205,11 +205,10 @@ def process_payload(item_id):
         if not item_already_notified(item_name, release_year):
             runtime_ticks = item_details["Items"][0].get("RunTimeTicks")
             rating = str(round(item_details["Items"][0].get("CommunityRating"),1))
+            genres = item_details["Items"][0].get("Genres")
             if runtime_ticks is not None:
-                runtime_sec = runtime_ticks // 10_000_000
-                hours, remainder = divmod(runtime_sec, 3600)
-                minutes, seconds = divmod(remainder, 60)
-                runtime = "{:02}:{:02}".format(hours, minutes)
+                seconds = runtime_ticks // 10_000_000
+                minutes = round(seconds / 60)
             else:
                 runtime = "Unknown"
             movie_name_cleaned = item_name.replace(f" ({release_year})", "").strip()
@@ -224,9 +223,13 @@ def process_payload(item_id):
                 )
 
             notification_message = (
-                f"*🍿 NUEVA PELÍCULA AÑADIDA 🍿*\n\n*{movie_name_cleaned}* *({release_year})*\n\n{overview}\n\n"
-                f"Duración: {runtime}\n"
-                f"Valoración: {rating}/10"
+                f"*🍿 NUEVA PELÍCULA AÑADIDA 🍿*\n\n"
+                f"*Título:* {movie_name_cleaned}\n"
+                f"*Año:* {release_year}\n"
+                f"*Duración:* {minutes} minutos\n"
+                f"*Valoración:* {rating}/10\n"
+                f"*Género:* {genres}\n\n"
+                f"*SINOPSIS:* \n{overview}"
             )
 
             if trailer_url != "Unknown":
